@@ -1,9 +1,11 @@
+import queue
+import shutil
 import subprocess
 import threading
-import queue
 import time
-import shutil
+
 from ..base_language import BaseLanguage
+
 
 class BashLanguage(BaseLanguage):
     def __init__(self):

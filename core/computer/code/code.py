@@ -1,5 +1,7 @@
-from .languages import PythonLanguage, BashLanguage, PowerShellLanguage
 import queue
+
+from .languages import PythonLanguage, BashLanguage, PowerShellLanguage
+
 
 class Code:
     def __init__(self):
