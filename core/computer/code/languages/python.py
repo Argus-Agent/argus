@@ -1,10 +1,13 @@
-from jupyter_client.manager import KernelManager
-from ..base_language import BaseLanguage
-import re
-import time
 import logging
 import queue
+import re
 import threading
+import time
+
+from jupyter_client.manager import KernelManager
+
+from ..base_language import BaseLanguage
+
 
 class PythonLanguage(BaseLanguage):
     def __init__(self):

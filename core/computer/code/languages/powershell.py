@@ -1,10 +1,11 @@
+import queue
+import shutil
 import subprocess
 import threading
-import queue
 import time
-import shutil
-import platform
+
 from ..base_language import BaseLanguage
+
 
 class PowerShellLanguage(BaseLanguage):
     def __init__(self):
