@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from litellm import completion
 
 from core.computer.code import Code
-from .default_prompt import default_prompt
+from .default_prompt import default_prompt, default_prompt_end
 from .code_parser import CodeParser
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -18,6 +18,8 @@ class CodeAgent:
         self.code_executer = Code()
         self.code_parser = CodeParser
         self.SYSTEM_PROMPT = default_prompt.format(language=str(self.code_executer.language_list))
+        self.SYSTEM_PROMPT_END = default_prompt_end
+        self.loop_breakers = ["The task is done.", "The task is impossible."]
         self.model = os.getenv("CodeAgent_MODEL")
         self.api_base = os.getenv("CodeAgent_API_BASE")
         self.api_key = os.getenv("CodeAgent_API_KEY")
@@ -48,7 +50,7 @@ class CodeAgent:
             message_from_client.put(other)
         return result
 
-    def _should_stop(self, message_from_client: Queue):
+    def _should_stop(self, message_from_client: Queue, ai_content: str = None):
         try:
             message = message_from_client.get_nowait()
             if message["name"] == "CodeAgent":
@@ -61,7 +63,12 @@ class CodeAgent:
                 message_from_client.put(message)  # Put it back if it's not for CodeAgent
         except queue.Empty:
             pass
-
+        
+        if ai_content:
+            for loop_breaker in self.loop_breakers:
+                if loop_breaker in ai_content:
+                    return True
+        return False
 
     def task(self, description: str, message_from_client: Queue, message_to_client: Queue) -> Queue:
         self.stop_code = False
@@ -69,13 +76,8 @@ class CodeAgent:
         messages = [
             {"role": "system", "content": self.SYSTEM_PROMPT},
             {"role": "user", "content": description}]
+        message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[START]"})
         while not self.stop_agent:
-            # 检查是否需要停止
-            self._should_stop(message_from_client)
-            if self.stop_agent:
-                message_to_client.put({"name": "CodeAgent", "type": "status", "content": "stop"})
-                return
-
             # 请求ai对话
             response = completion(
                 model=self.model,
@@ -85,35 +87,46 @@ class CodeAgent:
                 stream=True,
             )
             # 流式返回
-            message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[START]"})
+            message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[BEGIN]"})
             ai_content = ""
             for chunk in response:
+                # 检查是否需要停止
+                self._should_stop(message_from_client)
+                if self.stop_agent:
+                    message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
+                    return
                 if chunk.choices[0].delta.content:
                     delta = chunk.choices[0].delta.content
                     message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": delta})
                     ai_content += delta
             message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[END]"})
-            
+            if self._should_stop(message_from_client, ai_content):
+                break
             # TODO: If the context is too long, use RAG or other methods to handle it
-            if len(messages) > 10:
-                messages = [messages[0]] + messages[-5:]
+            # if len(messages) > 10:
+            #     messages = [messages[0]] + messages[-5:]
             
-            messages.append({"role": "assistant", "content": ai_content})
+            # messages.append({"role": "assistant", "content": ai_content})
 
             # 获取模型返回的代码
             codes = CodeParser(ai_content)
+            if not codes:
+                messages.append({"role": "user", "content": "No code blocks found. Skip execution. " + self.SYSTEM_PROMPT_END})
+                continue
             logging.info(f"Find {len(codes)} code blocks. Excuting...")
 
             # 依次执行代码
             for i in range(len(codes)):
                 # 检查是否需要停止
+                self.stop_code = False
                 self._should_stop(message_from_client)
                 if self.stop_agent:
-                    message_to_client.put({"name": "CodeAgent", "type": "status", "content": "stop"})
+                    message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
                     return
                 
                 code = codes[i]
-                results = self.code_executer.run(*code)
+                message_to_client.put({"name": "CodeAgent", "type": "status", "content": f"[BLOCK{i}]"})
+                results = self.code_executer.run(**code) # 解包
                 code_output_content = [{"type": "text", "text": "Code block{i} is executed, and the output is as follows:"}]
                 if not self._confirmation(message_from_client, message_to_client):
                     messages.append({"role": "user", "content": f"User rejected to excecute code block{i}"})
@@ -143,6 +156,11 @@ class CodeAgent:
                             }
                         )
                 messages.append({"role": "user", "content": code_output_content})
+            messages.append({"role": "user", "content": "All code blocks are executed. " + self.SYSTEM_PROMPT_END})
+        message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
+        return messages[-1]["content"]
+
+        
 
 
 
