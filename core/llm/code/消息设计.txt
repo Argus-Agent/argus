@@ -1,0 +1,3 @@
+{"name": "CodeAgent", "type": "request", "content": "code_permission"/"stop_agent"/"stop_code"}
+
+{"name": "CodeAgent", "type": "ai_content", "content": ai_content}

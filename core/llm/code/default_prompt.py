@@ -54,7 +54,7 @@ print("Result to inspect")
 For PowerShell:
 ```PowerShell
 # Your shell command here
-Get-ChildItem "C:\Path\To\Folder"
+Get-ChildItem "C:\\Path\\To\\Folder"
 ```
 
 For bash/sh:

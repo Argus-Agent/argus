@@ -105,8 +105,8 @@ class PythonLanguage(BaseLanguage):
             elif msg_type == "error":
                 content = "\n".join(content["traceback"])
                 # 移除颜色标识
-                ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-                content = ansi_escape.sub("", content)
+                # ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+                # content = ansi_escape.sub("", content)
                 message.put({"type": "text", "content": content})
 
             elif msg_type in ["display_data", "execute_result"]:

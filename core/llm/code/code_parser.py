@@ -1,5 +1,6 @@
 import re
-def CodePraser(text: str):
+
+def CodeParser(text: str):
     pattern = r"```([\w\+\-\.]*)\n([\s\S]*?)\n```"
     matches = re.findall(pattern, text)
     
