@@ -66,7 +66,7 @@ class CodeAgent:
                     return True
         return False
 
-    def task(self, description: str, message_from_client: Queue, message_to_client: Queue) -> Queue:
+    def task(self, description: str, message_from_client: Queue, message_to_client: Queue):
         self.stop_agent = False
         messages = [
             {"role": "system", "content": self.SYSTEM_PROMPT},
@@ -100,6 +100,8 @@ class CodeAgent:
                     message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": delta})
                     ai_content += delta
             message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[END]"})
+            messages.append({"role": "assistant", "content": ai_content})
+            
             # 检查ai是否想要停止
             if self._should_stop(ai_content):
                 break
@@ -107,8 +109,6 @@ class CodeAgent:
             # TODO: If the context is too long, use RAG or other methods to handle it
             # if len(messages) > 10:
             #     messages = [messages[0]] + messages[-5:]
-            
-            messages.append({"role": "assistant", "content": ai_content})
 
             # 获取模型返回的代码
             codes = CodeParser(ai_content)
