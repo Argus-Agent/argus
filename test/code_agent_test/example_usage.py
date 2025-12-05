@@ -1,7 +1,9 @@
 import sys
 import os
+from dotenv import load_dotenv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path)
 from core.llm.code import CodeAgent
 import queue
 import threading
