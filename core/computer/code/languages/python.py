@@ -74,7 +74,9 @@ class PythonLanguage(BaseLanguage):
             message.put({"type": "error", "content": "[PythonLanguage]Faild to start Jupyter kernel"})
             return
 
-        code = "%matplotlib inline" + code
+        # 只在需要时添加matplotlib魔法命令
+        if "matplotlib" in code and "%matplotlib" not in code:
+            code = "%matplotlib inline\n" + code
 
         try:
             self.current_msg_id=self.kc.execute(code)
@@ -105,8 +107,8 @@ class PythonLanguage(BaseLanguage):
             elif msg_type == "error":
                 content = "\n".join(content["traceback"])
                 # 移除颜色标识
-                # ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-                # content = ansi_escape.sub("", content)
+                ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+                content = ansi_escape.sub("", content)
                 message.put({"type": "text", "content": content})
 
             elif msg_type in ["display_data", "execute_result"]:
