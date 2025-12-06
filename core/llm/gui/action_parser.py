@@ -169,7 +169,6 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
                     mouse.scroll(clicks)
                 
     elif action_name == "wait":
-        import time
         time.sleep(5)
         
     elif action_name == "finished":

@@ -175,7 +175,10 @@ class Mouse:
             >>> mouse.drag(500, 500, duration=1.0)  # 拖拽到(500, 500)
         """
         try:
-            pyautogui.dragTo(x, y, duration=duration, button=button)
+            pyautogui.mouseDown(button=button)
+            pyautogui.dragTo(x, y, duration=duration, button=button, mouseDownUp=False)
+            time.sleep(0.1)  # 确保拖拽完成
+            pyautogui.mouseUp(button=button)
             current_pos = pyautogui.position()
             return {
                 'success': True,
@@ -367,5 +370,6 @@ get_position = _mouse_instance.get_position
 mouse_down = _mouse_instance.mouse_down
 mouse_up = _mouse_instance.mouse_up
 
-move(1283,628)
-drag(83,258)
+# Debug
+# move(1283,628)
+# drag(83,258)
