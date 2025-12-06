@@ -33,7 +33,7 @@ class CodeAgent:
         :param message_from_client:
         :return:
         """
-        while True:
+        while not self.stop_agent:
             try:
                 message = message_from_client.get(timeout=0.5)
             except queue.Empty:

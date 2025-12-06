@@ -157,7 +157,7 @@ class Mouse:
                 'error': str(e)
             }
     
-    def drag(self, x: int, y: int, duration: float = 0.5, 
+    def drag(self, x: int, y: int, duration: float = 1.0, 
              button: str = 'left') -> dict:
         """
         拖拽鼠标到指定位置
@@ -175,7 +175,7 @@ class Mouse:
             >>> mouse.drag(500, 500, duration=1.0)  # 拖拽到(500, 500)
         """
         try:
-            pyautogui.drag(x, y, duration=duration, button=button)
+            pyautogui.dragTo(x, y, duration=duration, button=button)
             current_pos = pyautogui.position()
             return {
                 'success': True,
@@ -366,3 +366,6 @@ scroll = _mouse_instance.scroll
 get_position = _mouse_instance.get_position
 mouse_down = _mouse_instance.mouse_down
 mouse_up = _mouse_instance.mouse_up
+
+move(1283,628)
+drag(83,258)

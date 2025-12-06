@@ -14,7 +14,7 @@ from .default_prompt import get_default_prompt
 
 class GUIAgent:
     def __init__(self):
-        self.default_prompt = get_default_prompt(thought=True)
+        self.default_prompt = get_default_prompt(thought=False)
         self.model = os.getenv("GUIAgent_MODEL")
         self.api_base = os.getenv("GUIAgent_API_BASE")
         self.api_key = os.getenv("GUIAgent_API_KEY")
@@ -27,7 +27,8 @@ class GUIAgent:
         :param message_from_client:
         :return:
         """
-        while True:
+        while not self.stop_agent:
+            # print("Listening for client messages...")
             try:
                 message = message_from_client.get(timeout=0.5)
             except queue.Empty:
@@ -47,15 +48,16 @@ class GUIAgent:
 
         logging.info("[GUIAgent]Prompt: %s", self.default_prompt.format(instruction=description))
         messages = [{"role": "system", "content": self.default_prompt.format(instruction=description)}]
+        
+        self.stop_agent = False
         listener_thread = threading.Thread(target=self._listener, args=(message_from_client,))
         listener_thread.daemon = True
         listener_thread.start()
         logging.info("[GUIAgent][START]")
         message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[START]"})
-
-        self.stop_agent = False
         while not self.stop_agent:
-            screenshot_png, origin_height, origin_width = self.Screen.screenshot_base64()
+            screenshot_png, origin_width, origin_height = self.Screen.screenshot_base64(resize_factor=0.8)
+            message_to_client.put({"name": "GUIAgent", **screenshot_png})
             messages.append({
                 "role": "user", 
                 "content": [
@@ -73,7 +75,7 @@ class GUIAgent:
                 api_key=self.api_key,
                 messages=messages,
                 stream=True,
-                thinking="enabled",
+                thinking="disabled",
             )
             message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[BEGIN]"})
             ai_content = ""
@@ -81,7 +83,7 @@ class GUIAgent:
                 if self.stop_agent: # 检查是否需要停止
                     logging.info("[GUIAgent][STOP]: User stop")
                     message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[STOP]"})
-                    return
+                    return "Task failed: User stopped"
                 if chunk.choices[0].delta.content:
                     delta = chunk.choices[0].delta.content
                     message_to_client.put({"name": "GUIAgent", "type": "ai_content", "content": delta})
@@ -100,7 +102,7 @@ class GUIAgent:
                     logging.info(f"[GUIAgent] Finished: {action_args.get('content', '')}")
                     self.stop_agent = True
                     message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[STOP]"})
-                    return
+                    return f"Task finished: {action_args.get('content', '')}"
 
                 # Send action coordinates to client
                 action_point = get_action_coordinates(action_name, action_args, origin_width, origin_height)
@@ -122,11 +124,13 @@ class GUIAgent:
                     })
 
                 map_action_to_function(action_name, action_args, origin_width, origin_height)
+                # 检查是否需要停止
+                if self.stop_agent:
+                    logging.info("[GUIAgent][STOP]: User stop")
+                    message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[STOP]"})
+                    return "Task failed: User stopped"
                 
             except Exception as e:
                 logging.error(f"[GUIAgent] Error executing action: {e}")
                 import traceback
                 traceback.print_exc()
-
-        logging.info("[GUIAgent][STOP]: Task finished")
-        message_to_client.put({"name": "GUIAgent", "type": "status", "content": "[STOP]"})

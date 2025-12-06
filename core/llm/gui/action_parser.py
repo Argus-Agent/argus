@@ -1,4 +1,5 @@
 import re
+import time
 import logging
 from typing import Dict, Any, Tuple, Optional
 from core.computer import mouse, keyboard
@@ -97,6 +98,8 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
     
     # Helper to convert relative coordinates (0-1000) to absolute
     def to_abs(x_rel, y_rel):
+        # return int(x_rel / 1000), int(y_rel / 1000)
+        print (f"origin width: {screen_width}, height: {screen_height}")
         return int(x_rel / 1000 * screen_width), int(y_rel / 1000 * screen_height)
 
     if action_name == "click":
@@ -104,6 +107,7 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
             pt = extract_point(args['point'])
             if pt:
                 x, y = to_abs(*pt)
+                print(f"Clicking at: {x}, {y}")
                 mouse.click(x, y)
     
     elif action_name == "left_double":
@@ -111,6 +115,7 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
             pt = extract_point(args['point'])
             if pt:
                 x, y = to_abs(*pt)
+                print(f"Double clicking at: {x}, {y}")
                 mouse.double_click(x, y)
                 
     elif action_name == "right_single":
@@ -118,6 +123,7 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
             pt = extract_point(args['point'])
             if pt:
                 x, y = to_abs(*pt)
+                print(f"Right clicking at: {x}, {y}")
                 mouse.right_click(x, y)
                 
     elif action_name == "drag":
@@ -127,6 +133,7 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
             if start_pt and end_pt:
                 start_x, start_y = to_abs(*start_pt)
                 end_x, end_y = to_abs(*end_pt)
+                print(f"Dragging from: {start_x}, {start_y} to {end_x}, {end_y}")
                 # Move to start, then drag to end
                 mouse.move(start_x, start_y)
                 mouse.drag(end_x, end_y)
@@ -151,6 +158,7 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
             direction = args['direction']
             if pt:
                 x, y = to_abs(*pt)
+                print(f"Scrolling at: {x}, {y} direction: {direction}")
                 # Move to point first
                 mouse.move(x, y)
                 
@@ -170,3 +178,5 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
         
     else:
         logging.warning(f"Unknown action: {action_name}")
+
+    time.sleep(0.4)
