@@ -1,0 +1,1902 @@
+Index: core/computer/screen/__init__.py
+===================================================================
+diff --git a/core/computer/screen/__init__.py b/core/computer/screen/__init__.py
+deleted file mode 100644
+--- a/core/computer/screen/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,6 +0,0 @@
+-from .screen import Screen
+-
+-
+-__all__ = [Screen]
+-
+-__version__ = '1.0.0'
+\ No newline at end of file
+Index: core/computer/keyboard/__init__.py
+===================================================================
+diff --git a/core/computer/keyboard/__init__.py b/core/computer/keyboard/__init__.py
+deleted file mode 100644
+--- a/core/computer/keyboard/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,47 +0,0 @@
+-"""
+-键盘操作包
+-"""
+-from .keyboard import (
+-    Keyboard,
+-    type_text,
+-    press,
+-    hotkey,
+-    key_down,
+-    key_up,
+-    hold_key,
+-    copy,
+-    paste,
+-    cut,
+-    select_all,
+-    undo,
+-    redo,
+-    save,
+-    find,
+-    new_tab,
+-    close_tab,
+-    refresh,
+-    switch_window
+-)
+-
+-__all__ = [
+-    # Keyboard类和函数
+-    'Keyboard',
+-    'type_text',
+-    'press',
+-    'hotkey',
+-    'key_down',
+-    'key_up',
+-    'hold_key',
+-    'copy',
+-    'paste',
+-    'cut',
+-    'select_all',
+-    'undo',
+-    'redo',
+-    'save',
+-    'find',
+-    'new_tab',
+-    'close_tab',
+-    'refresh',
+-    'switch_window',
+-]
+Index: core/computer/code/languages/powershell.py
+===================================================================
+diff --git a/core/computer/code/languages/powershell.py b/core/computer/code/languages/powershell.py
+deleted file mode 100644
+--- a/core/computer/code/languages/powershell.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,64 +0,0 @@
+-import queue
+-import shutil
+-import subprocess
+-import threading
+-import time
+-
+-from ..base_language import BaseLanguage
+-
+-
+-class PowerShellLanguage(BaseLanguage):
+-    def __init__(self):
+-        super().__init__()
+-        self.process = None
+-
+-    def is_available(self):
+-        return shutil.which("powershell") is not None or shutil.which("pwsh") is not None
+-
+-    def run(self, code: str):
+-        message = queue.Queue()
+-        execution_thread = threading.Thread(target=self._execute, args=(code, message))
+-        execution_thread.daemon = True
+-        execution_thread.start()
+-        return message
+-
+-    def _execute(self, code: str, message: queue.Queue):
+-        self.is_running = True
+-        self.start_time = time.time()
+-        self.should_stop = False
+-        
+-        executable = "pwsh" if shutil.which("pwsh") else "powershell"
+-        
+-        try:
+-            # -Command - tells powershell to read command from stdin
+-            self.process = subprocess.Popen(
+-                [executable, "-NoProfile", "-Command", code],
+-                stdout=subprocess.PIPE,
+-                stderr=subprocess.STDOUT,
+-                text=True,
+-                bufsize=1,
+-                universal_newlines=True
+-            )
+-            
+-            for line in self.process.stdout:
+-                if self.should_stop:
+-                    break
+-                message.put({"type": "text", "content": line})
+-            
+-            return_code = self.process.wait()
+-            message.put({"type": "text", "content": f"Return code: {return_code}"})
+-            
+-        except Exception as e:
+-            message.put({"type": "error", "content": f"[PowerShellLanguage]Error: {e}"})
+-        finally:
+-            self.is_running = False
+-            self.process = None
+-            
+-    def interrupt(self):
+-        super().interrupt()
+-        if self.process:
+-            self.process.terminate()
+-            try:
+-                self.process.wait(timeout=2)
+-            except subprocess.TimeoutExpired:
+-                self.process.kill()
+Index: core/computer/mouse/mouse.py
+===================================================================
+diff --git a/core/computer/mouse/mouse.py b/core/computer/mouse/mouse.py
+deleted file mode 100644
+--- a/core/computer/mouse/mouse.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,368 +0,0 @@
+-import pyautogui
+-import time
+-from typing import Tuple, Optional, Union
+-
+-
+-class Mouse:
+-    """鼠标操作类，提供各种鼠标控制功能"""
+-    
+-    def __init__(self):
+-        """初始化鼠标模块"""
+-        # 设置PyAutoGUI的安全特性
+-        pyautogui.FAILSAFE = True  # 移动鼠标到屏幕左上角会触发异常
+-        pyautogui.PAUSE = 0.1  # 每次操作后暂停0.1秒
+-    
+-    def click(self, x: Optional[int] = None, y: Optional[int] = None, 
+-              clicks: int = 1, interval: float = 0.0, 
+-              button: str = 'left', duration: float = 0.0) -> dict:
+-        """
+-        鼠标点击操作
+-        
+-        Args:
+-            x: X坐标，None表示当前位置
+-            y: Y坐标，None表示当前位置
+-            clicks: 点击次数，默认1次
+-            interval: 多次点击之间的间隔（秒）
+-            button: 鼠标按键 'left'/'right'/'middle'
+-            duration: 移动到目标位置的持续时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.click(100, 200)  # 点击坐标(100, 200)
+-            >>> mouse.click()  # 点击当前位置
+-            >>> mouse.click(button='right')  # 右键点击当前位置
+-        """
+-        try:
+-            if x is not None and y is not None:
+-                pyautogui.click(x, y, clicks=clicks, interval=interval, 
+-                              button=button, duration=duration)
+-            else:
+-                pyautogui.click(clicks=clicks, interval=interval, button=button)
+-            
+-            current_pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'action': 'click',
+-                'position': (current_pos.x, current_pos.y),
+-                'button': button,
+-                'clicks': clicks
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'click',
+-                'error': str(e)
+-            }
+-    
+-    def double_click(self, x: Optional[int] = None, y: Optional[int] = None,
+-                     button: str = 'left', duration: float = 0.0) -> dict:
+-        """
+-        鼠标双击操作
+-        
+-        Args:
+-            x: X坐标，None表示当前位置
+-            y: Y坐标，None表示当前位置
+-            button: 鼠标按键 'left'/'right'/'middle'
+-            duration: 移动到目标位置的持续时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.double_click(300, 400)  # 双击坐标(300, 400)
+-        """
+-        return self.click(x, y, clicks=2, button=button, duration=duration)
+-    
+-    def right_click(self, x: Optional[int] = None, y: Optional[int] = None,
+-                    duration: float = 0.0) -> dict:
+-        """
+-        鼠标右键点击
+-        
+-        Args:
+-            x: X坐标，None表示当前位置
+-            y: Y坐标，None表示当前位置
+-            duration: 移动到目标位置的持续时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.right_click(500, 300)  # 右键点击坐标(500, 300)
+-        """
+-        return self.click(x, y, button='right', duration=duration)
+-    
+-    def move(self, x: int, y: int, duration: float = 0.0) -> dict:
+-        """
+-        移动鼠标到指定位置
+-        
+-        Args:
+-            x: 目标X坐标
+-            y: 目标Y坐标
+-            duration: 移动持续时间（秒），0表示立即移动
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.move(800, 600)  # 立即移动到(800, 600)
+-            >>> mouse.move(800, 600, duration=1.0)  # 用1秒时间移动到(800, 600)
+-        """
+-        try:
+-            pyautogui.moveTo(x, y, duration=duration)
+-            current_pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'action': 'move',
+-                'position': (current_pos.x, current_pos.y),
+-                'duration': duration
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'move',
+-                'error': str(e)
+-            }
+-    
+-    def move_rel(self, x_offset: int, y_offset: int, duration: float = 0.0) -> dict:
+-        """
+-        相对移动鼠标（从当前位置偏移）
+-        
+-        Args:
+-            x_offset: X轴偏移量
+-            y_offset: Y轴偏移量
+-            duration: 移动持续时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.move_rel(100, 0)  # 向右移动100像素
+-        """
+-        try:
+-            pyautogui.moveRel(x_offset, y_offset, duration=duration)
+-            current_pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'action': 'move_rel',
+-                'position': (current_pos.x, current_pos.y),
+-                'offset': (x_offset, y_offset),
+-                'duration': duration
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'move_rel',
+-                'error': str(e)
+-            }
+-    
+-    def drag(self, x: int, y: int, duration: float = 0.5, 
+-             button: str = 'left') -> dict:
+-        """
+-        拖拽鼠标到指定位置
+-        
+-        Args:
+-            x: 目标X坐标
+-            y: 目标Y坐标
+-            duration: 拖拽持续时间（秒）
+-            button: 使用的鼠标按键
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.drag(500, 500, duration=1.0)  # 拖拽到(500, 500)
+-        """
+-        try:
+-            pyautogui.drag(x, y, duration=duration, button=button)
+-            current_pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'action': 'drag',
+-                'position': (current_pos.x, current_pos.y),
+-                'button': button,
+-                'duration': duration
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'drag',
+-                'error': str(e)
+-            }
+-    
+-    def drag_rel(self, x_offset: int, y_offset: int, duration: float = 0.5,
+-                 button: str = 'left') -> dict:
+-        """
+-        相对拖拽（从当前位置偏移）
+-        
+-        Args:
+-            x_offset: X轴偏移量
+-            y_offset: Y轴偏移量
+-            duration: 拖拽持续时间（秒）
+-            button: 使用的鼠标按键
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.drag_rel(100, 50)  # 向右下拖拽
+-        """
+-        try:
+-            pyautogui.dragRel(x_offset, y_offset, duration=duration, button=button)
+-            current_pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'action': 'drag_rel',
+-                'position': (current_pos.x, current_pos.y),
+-                'offset': (x_offset, y_offset),
+-                'button': button,
+-                'duration': duration
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'drag_rel',
+-                'error': str(e)
+-            }
+-    
+-    def scroll(self, clicks: int, x: Optional[int] = None, 
+-               y: Optional[int] = None) -> dict:
+-        """
+-        滚动鼠标滚轮
+-        
+-        Args:
+-            clicks: 滚动单位数，正数向上滚动，负数向下滚动
+-            x: 在指定位置滚动的X坐标（可选）
+-            y: 在指定位置滚动的Y坐标（可选）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> mouse.scroll(5)  # 向上滚动5个单位
+-            >>> mouse.scroll(-3)  # 向下滚动3个单位
+-            >>> mouse.scroll(5, 500, 500)  # 在(500, 500)位置向上滚动
+-        """
+-        try:
+-            if x is not None and y is not None:
+-                pyautogui.scroll(clicks, x, y)
+-            else:
+-                pyautogui.scroll(clicks)
+-            
+-            return {
+-                'success': True,
+-                'action': 'scroll',
+-                'clicks': clicks,
+-                'position': (x, y) if x and y else 'current'
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'scroll',
+-                'error': str(e)
+-            }
+-    
+-    def get_position(self) -> dict:
+-        """
+-        获取当前鼠标位置
+-        
+-        Returns:
+-            包含鼠标位置的字典
+-            
+-        Examples:
+-            >>> pos = mouse.get_position()
+-            >>> print(f"鼠标位置: ({pos['x']}, {pos['y']})")
+-        """
+-        try:
+-            pos = pyautogui.position()
+-            return {
+-                'success': True,
+-                'x': pos.x,
+-                'y': pos.y,
+-                'position': (pos.x, pos.y)
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'error': str(e)
+-            }
+-    
+-    def mouse_down(self, x: Optional[int] = None, y: Optional[int] = None,
+-                   button: str = 'left') -> dict:
+-        """
+-        按下鼠标按键（不释放）
+-        
+-        Args:
+-            x: X坐标（可选）
+-            y: Y坐标（可选）
+-            button: 鼠标按键
+-            
+-        Returns:
+-            包含操作结果的字典
+-        """
+-        try:
+-            if x is not None and y is not None:
+-                pyautogui.mouseDown(x, y, button=button)
+-            else:
+-                pyautogui.mouseDown(button=button)
+-            
+-            return {
+-                'success': True,
+-                'action': 'mouse_down',
+-                'button': button
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'mouse_down',
+-                'error': str(e)
+-            }
+-    
+-    def mouse_up(self, x: Optional[int] = None, y: Optional[int] = None,
+-                 button: str = 'left') -> dict:
+-        """
+-        释放鼠标按键
+-        
+-        Args:
+-            x: X坐标（可选）
+-            y: Y坐标（可选）
+-            button: 鼠标按键
+-            
+-        Returns:
+-            包含操作结果的字典
+-        """
+-        try:
+-            if x is not None and y is not None:
+-                pyautogui.mouseUp(x, y, button=button)
+-            else:
+-                pyautogui.mouseUp(button=button)
+-            
+-            return {
+-                'success': True,
+-                'action': 'mouse_up',
+-                'button': button
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'mouse_up',
+-                'error': str(e)
+-            }
+-
+-
+-# 创建全局实例，支持直接调用
+-_mouse_instance = Mouse()
+-
+-# 导出便捷函数
+-click = _mouse_instance.click
+-double_click = _mouse_instance.double_click
+-right_click = _mouse_instance.right_click
+-move = _mouse_instance.move
+-move_rel = _mouse_instance.move_rel
+-drag = _mouse_instance.drag
+-drag_rel = _mouse_instance.drag_rel
+-scroll = _mouse_instance.scroll
+-get_position = _mouse_instance.get_position
+-mouse_down = _mouse_instance.mouse_down
+-mouse_up = _mouse_instance.mouse_up
+\ No newline at end of file
+Index: core/llm/code/agent.py
+===================================================================
+diff --git a/core/llm/code/agent.py b/core/llm/code/agent.py
+deleted file mode 100644
+--- a/core/llm/code/agent.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,202 +0,0 @@
+-import logging
+-import os
+-import time
+-import queue
+-import threading
+-from queue import Queue
+-from dotenv import load_dotenv
+-from litellm import completion
+-from core.computer.code import Code
+-from .default_prompt import default_prompt, default_prompt_end
+-from .code_parser import CodeParser
+-
+-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+-load_dotenv(dotenv_path)
+-
+-class CodeAgent:
+-    def __init__(self):
+-        self.code_executer = Code()
+-        self.SYSTEM_PROMPT = default_prompt.format(language=str(self.code_executer.language_list))
+-        logging.info("[CodeAgent]"+self.SYSTEM_PROMPT)
+-        self.SYSTEM_PROMPT_END = default_prompt_end
+-        self.loop_breakers = ["The task is done.", "The task is impossible."]
+-        self.model = os.getenv("CodeAgent_MODEL")
+-        self.api_base = os.getenv("CodeAgent_API_BASE")
+-        self.api_key = os.getenv("CodeAgent_API_KEY")
+-        self.stop_code = False
+-        self.stop_agent = False
+-        self.permission = None
+-
+-    def _listener(self, message_from_client: Queue):
+-        """
+-        监听来自客户端的信息
+-        :param message_from_client:
+-        :return:
+-        """
+-        while True:
+-            try:
+-                message = message_from_client.get(timeout=0.5)
+-            except queue.Empty:
+-                continue
+-            print("get client message")
+-            # 不是发给CodeAgent的信息，放回
+-            if message["name"] != "CodeAgent":
+-                message_from_client.put(message)
+-                continue
+-            # 允许执行代码
+-            if message["type"] == "request":
+-                if message["content"] == "deny":
+-                    self.permission = False
+-                    logging.info("[CodeAgent]User denied execution")
+-                elif message["content"] == "approve":
+-                    self.permission = True
+-                    logging.info("[CodeAgent]User approved execution")
+-                # 停止相关
+-                elif message["content"] == "stop_agent":
+-                    self.stop_agent = True
+-                    logging.info("[CodeAgent]User stopped agent")
+-                elif message["content"] == "stop_code":
+-                    self.stop_code = True
+-                    logging.info("[CodeAgent]User stopped code execution")
+-
+-    def _should_stop(self, ai_content: str = None):
+-        if ai_content:
+-            for loop_breaker in self.loop_breakers:
+-                if loop_breaker in ai_content:
+-                    return True
+-        return False
+-
+-    def task(self, description: str, message_from_client: Queue, message_to_client: Queue):
+-        self.stop_agent = False
+-        messages = [
+-            {"role": "system", "content": self.SYSTEM_PROMPT},
+-            {"role": "user", "content": description}]
+-        listener_thread = threading.Thread(target=self._listener, args=(message_from_client,))
+-        listener_thread.daemon = True
+-        listener_thread.start()
+-        logging.info("[CodeAgent][START]")
+-        message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[START]"})
+-        
+-        while not self.stop_agent:
+-            # 请求ai对话
+-            response = completion(
+-                model=self.model,
+-                api_base=self.api_base,
+-                api_key=self.api_key,
+-                messages=messages,
+-                stream=True,
+-            )
+-            # 流式返回
+-            message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[BEGIN]"})
+-            ai_content = ""
+-            for chunk in response:
+-                # 检查是否需要停止
+-                if self.stop_agent:
+-                    logging.info("[CodeAgent][STOP]: User stop")
+-                    message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
+-                    return
+-                if chunk.choices[0].delta.content:
+-                    delta = chunk.choices[0].delta.content
+-                    message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": delta})
+-                    ai_content += delta
+-            message_to_client.put({"name": "CodeAgent", "type": "ai_content", "content": "[END]"})
+-            messages.append({"role": "assistant", "content": ai_content})
+-            
+-            # 检查ai是否想要停止
+-            if self._should_stop(ai_content):
+-                break
+-
+-            # TODO: If the context is too long, use RAG or other methods to handle it
+-            # if len(messages) > 10:
+-            #     messages = [messages[0]] + messages[-5:]
+-
+-            # 获取模型返回的代码
+-            codes = CodeParser(ai_content)
+-            if not codes:
+-                messages.append({"role": "user", "content": "No code blocks found. Skip execution. " + self.SYSTEM_PROMPT_END})
+-                continue
+-
+-            # 依次执行代码
+-            logging.info(f"Find {len(codes)} code blocks. Executing...")
+-            for i in range(len(codes)):
+-
+-                logging.info(f"Executing code block {i}..., code: {codes[i]}")
+-                code = codes[i]
+-                self.permission = None
+-                message_to_client.put({"name": "CodeAgent", "type": "status", "content": f"[BLOCK{i}]"})
+-                message_to_client.put({"name": "CodeAgent", "type": "request", "content": f"[BLOCK{i}]need_permission"})
+-
+-                # 阻塞等待客户端返回允许结果
+-                print("wtf???")
+-                while self.permission is None:
+-                    logging.info("waiting permission")
+-                    print("waiting permission")
+-                    # 检查是否需要停止
+-                    time.sleep(0.5)
+-                    if self.stop_agent:
+-                        logging.info("[CodeAgent][STOP]: User stop")
+-                        message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
+-                        return
+-                if not self.permission:
+-                    logging.info(f"User rejected to excecute code block{i}")
+-                    messages.append({"role": "user", "content": f"User rejected to excecute code block{i}"})
+-                    continue
+-                
+-                logging.info(f"User approved to excecute code block {i}, start executing")
+-                results = self.code_executer.run(lang=code["lang"], code=code["code"]) # 正确解包
+-                code_output_content = [{"type": "text", "text": f"Code block{i} is executed, and the output is as follows:"}]
+-                
+-                self.stop_code = False
+-                while self.code_executer.is_running() or not results.empty():
+-                    logging.info(f"[CodeAgent]: Code block{i} is running, code_executer:{self.code_executer.is_running()}, results.empty():{results.empty()}")
+-                    # 检查是否需要停止
+-                    if self.stop_code or self.stop_agent:
+-                        self.code_executer.interrupt()
+-                        break
+-
+-                    try:
+-                        delta = results.get(timeout=0.2)
+-                    except queue.Empty:
+-                        continue
+-
+-                    # TODO: 有bug，图片先不返回
+-                    if delta["type"] == "image/png" or delta["type"] == "image/jpeg":
+-                        # pass
+-                        message_to_client.put({"name": "CodeAgent", **delta})
+-                        code_output_content.append(
+-                            {
+-                                "type": "image_url",
+-                                "image_url": {
+-                                    "url": f"data:{delta["type"]};base64,{delta["content"]}"
+-                                }
+-                            }
+-                        )
+-                    else: # 暂时把其他所有内容转为text
+-                        message_to_client.put({"name": "CodeAgent", "type": "text", "content": delta["content"]})
+-                        code_output_content.append(
+-                            {
+-                                "type": "text",
+-                                "text": delta["content"]
+-                            }
+-                        )
+-
+-                logging.info(f"Finish executing code block {i}")
+-                messages.append({"role": "user", "content": code_output_content})
+-
+-            messages.append({"role": "user", "content": "All code blocks are executed. " + self.SYSTEM_PROMPT_END})
+-        
+-        logging.info("[CodeAgent][STOP]: task finished")
+-        message_to_client.put({"name": "CodeAgent", "type": "status", "content": "[STOP]"})
+-        return messages[-1]["content"]
+-
+-        
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-            
+Index: core/computer/code/code.py
+===================================================================
+diff --git a/core/computer/code/code.py b/core/computer/code/code.py
+deleted file mode 100644
+--- a/core/computer/code/code.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,74 +0,0 @@
+-import queue
+-
+-from .languages import PythonLanguage, BashLanguage, PowerShellLanguage
+-
+-
+-class Code:
+-    def __init__(self):
+-        self.python = PythonLanguage()
+-        # self.cmd = CMDLanguage()
+-        self.bash = BashLanguage()
+-        self.powershell = PowerShellLanguage()
+-        self.current_language = None
+-        self.language_map = {
+-            "python": self.python,
+-            # "cmd": self.cmd,
+-            "powershell": self.powershell,
+-            "pwsh": self.powershell,  # PowerShell Core别名
+-            "bash": self.bash,
+-            "sh": self.bash,  # Shell别名
+-        }
+-        self.language_list = []
+-        for lang, lang_obj in self.language_map.items():
+-            if hasattr(lang_obj, 'is_available'):
+-                if lang_obj.is_available():
+-                    self.language_list.append(lang)
+-            else:
+-                # Python总是可用的
+-                self.language_list.append(lang)
+-
+-    # def language_list(self):
+-    #     available = []
+-
+-    def run(self, lang: str, code: str):
+-        """
+-        运行代码
+-        
+-        :param lang: 要运行的代码语言
+-        :type lang: str
+-        :param code: 要运行的代码
+-        :type code: str
+-        """
+-        lang = lang.lower()
+-        if lang in self.language_list:
+-            self.current_language = self.language_map[lang]
+-            return self.current_language.run(code)
+-        else:
+-            message = queue.Queue()
+-            message.put({"type": "error", "content": f"[Code]Unsupported language:{lang}"})
+-            return message
+-
+-    def interrupt(self):
+-        """
+-        中断执行中的代码
+-        """
+-        message = queue.Queue()
+-        if self.current_language and self.current_language.is_running:
+-            self.current_language.interrupt()
+-            message.put({"type": "text", "content": "Code execution interrupted"})
+-        else:
+-            message.put({"type": "text", "content": "No code is running"})
+-        return message
+-
+-    def get_elapsed_time(self):
+-        """
+-        获取代码已运行时间
+-        """
+-        if self.current_language:
+-            return self.current_language.get_elapsed_time()
+-
+-    def is_running(self):
+-        """
+-        代码是否正在运行
+-        """
+-        return self.current_language and self.current_language.is_running
+\ No newline at end of file
+Index: core/computer/code/languages/__init__.py
+===================================================================
+diff --git a/core/computer/code/languages/__init__.py b/core/computer/code/languages/__init__.py
+deleted file mode 100644
+--- a/core/computer/code/languages/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,12 +0,0 @@
+-"""
+-
+-"""
+-
+-
+-from .bash import BashLanguage
+-from .powershell import PowerShellLanguage
+-from .python import PythonLanguage
+-
+-__all__ = ['PythonLanguage', 'BashLanguage', 'PowerShellLanguage']
+-
+-__version__ = '1.0.0'
+\ No newline at end of file
+Index: core/llm/code/消息设计.md
+===================================================================
+diff --git a/core/llm/code/消息设计.md b/core/llm/code/消息设计.md
+deleted file mode 100644
+--- a/core/llm/code/消息设计.md	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,83 +0,0 @@
+-# 消息设计 (Message Design)
+-
+-Agent 与客户端（UI）之间通过 `Queue` 进行通信，消息格式为 JSON 字典。
+-
+-## 1. 客户端 -> Agent (Client to Agent)
+-客户端发送的消息主要用于控制 Agent 的行为和响应权限请求。
+-
+-**基本格式:**
+-```json
+-{
+-  "name": "CodeAgent",  // 给谁发送就填谁
+-  "type": "request",
+-  "content": "指令内容"
+-}
+-```
+-
+-**指令内容 (content):**
+-- `approve`: 允许执行当前代码块。
+-- `deny`: 拒绝执行当前代码块。
+-- `stop_agent`: 停止整个 Agent 任务。
+-- `stop_code`: 停止当前正在执行的代码（中断执行）。
+-
+-## 3. Agent -> 客户端 (Agent to Client)
+-Agent 发送的消息用于更新状态、流式传输 AI 回复、请求权限以及展示代码执行结果。
+-
+-**基本格式:**
+-```json
+-{
+-  "name": "CodeAgent",
+-  "type": "消息类型",
+-  "content": "消息内容"
+-}
+-```
+-
+-### 3.1 状态消息 (type: "status")
+-用于通知 UI 当前 Agent 的工作阶段。
+-- `[START]`: 任务开始。
+-- `[STOP]`: 任务结束（完成或被用户停止）。
+-- `[BLOCK{i}]`: 正在处理第 `i` 个代码块（准备执行）。
+-
+-### 3.2 AI 内容流 (type: "ai_content")
+-用于流式展示 LLM 的思考和回复过程。
+-- `[BEGIN]`: 开始生成内容。
+-- `[END]`: 内容生成结束。
+-- `<text>`: AI 生成的文本片段（增量更新）。
+-
+-### 3.3 权限请求 (type: "request")
+-当 Agent 解析出代码块并准备执行时，向 UI 请求权限。
+-- `[BLOCK{i}]need_permission`: 请求执行第 `i` 个代码块的权限。
+-  - UI 收到此消息后应显示“批准/拒绝”按钮。
+-
+-### 3.4 代码执行输出 (type: "text" / "image/png" 等)
+-展示代码执行的实时输出。
+-
+-- **文本输出 (type: "text"):**
+-  - `content`: 标准输出 (stdout) 或标准错误 (stderr) 的文本内容。
+-
+-- **图片输出 (type: "image/png" / "image/jpeg"):**
+-  - *注意: 目前 `agent.py` 中图片处理逻辑被注释/跳过，需要修复才能正常接收图片。*
+-  - `content`: Base64 编码的图片数据。
+-
+-- **其他类型:**
+-  - `html`: HTML 内容。
+-  - `javascript`: JS 代码。
+-  - `error`: 执行错误信息。
+-
+-## 4. 交互流程示例 (Interaction Flow)
+-
+-调用`CodeAgent.task("任务描述")`之后：
+-
+-1. **任务开始**: Agent 发送 `status: [START]`。
+-2. **AI 思考**: Agent 发送 `ai_content: [BEGIN]`, 随后发送多条内容片段, 最后发送 `ai_content: [END]`。
+-3. **代码解析**: Agent 发现代码块。(Agent发现的代码块并不会传给客户端，客户端需要自己按顺序切分代码片段)
+-4. **请求权限**: Agent 发送 `status: [BLOCK0]`, `request: [BLOCK0]need_permission`。
+-5. **用户确认**: 客户端发送 `content: approve`。
+-6. **代码执行**: Agent 执行代码，持续发送 `type: text` (日志/结果)。
+-7. **执行完成**: Agent 继续下一轮或结束。
+-8. **任务结束**: Agent 发送 `status: [STOP]`。
+-
+-## 5. TODO (Suggestions)
+-1. **修复图片传输**: base64太长，之后可以采取压缩方法
+-2. **结构化状态**: 目前的 `[START]` 等状态码混在 `content` 字符串中，建议后续优化为独立的枚举字段，方便前端解析。
+-3. **上下文未处理**
+Index: core/computer/mouse/__init__.py
+===================================================================
+diff --git a/core/computer/mouse/__init__.py b/core/computer/mouse/__init__.py
+deleted file mode 100644
+--- a/core/computer/mouse/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,33 +0,0 @@
+-"""
+-鼠标操作包
+-"""
+-from .mouse import (
+-    Mouse,
+-    click,
+-    double_click,
+-    right_click,
+-    move,
+-    move_rel,
+-    drag,
+-    drag_rel,
+-    scroll,
+-    get_position,
+-    mouse_down,
+-    mouse_up
+-)
+-
+-__all__ = [
+-    # Mouse类和函数
+-    'Mouse',
+-    'click',
+-    'double_click',
+-    'right_click',
+-    'move',
+-    'move_rel',
+-    'drag',
+-    'drag_rel',
+-    'scroll',
+-    'get_position',
+-    'mouse_down',
+-    'mouse_up',
+-]
+\ No newline at end of file
+Index: core/computer/code/__init__.py
+===================================================================
+diff --git a/core/computer/code/__init__.py b/core/computer/code/__init__.py
+deleted file mode 100644
+--- a/core/computer/code/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,11 +0,0 @@
+-"""
+-代码运行包
+-"""
+-
+-
+-from .base_language import BaseLanguage
+-from .code import Code
+-
+-__all__ = ['Code', 'BaseLanguage']
+-
+-__version__ = '1.0.0'
+\ No newline at end of file
+Index: core/computer/screen/screen.py
+===================================================================
+diff --git a/core/computer/screen/screen.py b/core/computer/screen/screen.py
+deleted file mode 100644
+--- a/core/computer/screen/screen.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,35 +0,0 @@
+-import base64
+-import io
+-
+-from PIL import Image, ImageGrab
+-
+-
+-class Screen:
+-    def __init__(self):
+-        pass
+-    def screenshot(self, resize_factor: float = 0.5, format: str= "png", quality: int = 100):
+-        """
+-        获取截屏
+-        :param resize_factor: 缩放因子
+-        :param format: 格式，可选png/jpeg
+-        :param quality: 图片质量，jpeg有效
+-        :return: [{"type": f"image/{format}", "content": base64_encoded}]
+-        """
+-        image = ImageGrab.grab()
+-        new_width = int(image.size[0] * resize_factor)
+-        new_height = int(image.size[1] * resize_factor)
+-        image = image.resize((new_width, new_height), Image.LANCZOS)
+-
+-        img_byte_arr= io.BytesIO()
+-        format = format.lower()
+-        if format == "png":
+-            image.save(img_byte_arr, format=format)
+-        elif format == "jpeg":
+-            image.save(img_byte_arr, format=format, quality=quality)
+-        else:
+-            raise ValueError("[Screen]Unsupported format: ", format)
+-
+-        img_bytes = img_byte_arr.getvalue()
+-        base64_encoded = base64.b64encode(img_bytes).decode('utf-8')
+-
+-        return [{"type": f"image/{format}", "content": base64_encoded}]
+\ No newline at end of file
+Index: core/computer/code/languages/python.py
+===================================================================
+diff --git a/core/computer/code/languages/python.py b/core/computer/code/languages/python.py
+deleted file mode 100644
+--- a/core/computer/code/languages/python.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,131 +0,0 @@
+-import logging
+-import queue
+-import re
+-import threading
+-import time
+-
+-from jupyter_client.manager import KernelManager
+-
+-from ..base_language import BaseLanguage
+-
+-
+-class PythonLanguage(BaseLanguage):
+-    def __init__(self):
+-        super().__init__()
+-        self.km = None
+-        self.kc = None
+-        self.current_msg_id = None
+-    
+-    def start(self):
+-        self.should_stop = False
+-        self.start_time = time.time()
+-        self.elapsed_time = 0
+-        
+-        if self.km:
+-            self.stop()
+-        try:
+-            self.km = KernelManager(kernel_name='python3')
+-            self.is_running = True
+-            self.km.start_kernel()
+-            self.kc = self.km.client()
+-            self.kc.start_channels()
+-            self.kc.wait_for_ready()
+-            logging.info("[PythonLanguage]Started kernel client&manager")
+-        except Exception as e:
+-            self.stop()
+-            logging.error("[PythonLanguage]Error starting kernel: %s", e)
+-
+-    def stop(self):
+-        self.is_running = False
+-        if self.start_time:
+-            self.elapsed_time = time.time() - self.start_time
+-        self.start_time = None
+-        
+-        try:
+-            if self.km:
+-                self.km.shutdown_kernel()
+-                self.is_running = False
+-                self.km = None
+-            if self.kc:
+-                self.kc.stop_channels()
+-                self.current_msg_id = None
+-                self.kc = None
+-            logging.info("[PythonLanguage]Stopped kernel client&manager")
+-        except Exception as e:
+-            logging.error("[PythonLanguage]Error during cleanup kernel: %s", e)
+-
+-    def wait_for_shutdown(self):
+-        while self.is_running or self.kc:
+-            time.sleep(0.1)
+-
+-    def run(self, code: str):
+-        message = queue.Queue()
+-
+-        excecution_thread = threading.Thread(target=self._execute_jupyter, args=(code, message))
+-        excecution_thread.daemon = True
+-        excecution_thread.start()
+-
+-        return message
+-
+-    def _execute_jupyter(self, code: str, message: queue.Queue):
+-        self.start()
+-
+-        if self.km.is_alive() is False:
+-            message.put({"type": "error", "content": "[PythonLanguage]Faild to start Jupyter kernel"})
+-            return
+-
+-        # 只在需要时添加matplotlib魔法命令
+-        if "matplotlib" in code and "%matplotlib" not in code:
+-            code = "%matplotlib inline\n" + code
+-
+-        try:
+-            self.current_msg_id=self.kc.execute(code)
+-        except Exception as e:
+-            message.put({"type": "error", "content": f"[PythonLanguage]Error while executing code: {e}"})
+-            logging.error("[PythonLanguage]Error while executing code: %s", e)
+-        print("[PythonLanguage]start runing...")
+-        while True:
+-            if self.should_stop:
+-                self.km.interrupt_kernel()
+-
+-            try:
+-                msg = self.kc.get_iopub_msg(timeout=1)
+-            except queue.Empty:
+-                continue
+-
+-            if msg['parent_header'].get('msg_id') != self.current_msg_id:
+-                continue
+-
+-            msg_type = msg['msg_type']
+-            content = msg['content']
+-
+-            print("get_one_msg")
+-
+-            if msg_type == "stream":
+-                message.put({"type": "text", "content": content['text']})
+-
+-            elif msg_type == "error":
+-                content = "\n".join(content["traceback"])
+-                # 移除颜色标识
+-                ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+-                content = ansi_escape.sub("", content)
+-                message.put({"type": "text", "content": content})
+-
+-            elif msg_type in ["display_data", "execute_result"]:
+-                data = content["data"]
+-                if "image/png" in data:
+-                    message.put({"type": "image/png", "content": data["image/png"]})
+-                elif "image/jpeg" in data:
+-                    message.put({"type": "image/jpeg", "content": data["image/jpeg"]})
+-                elif "text/html" in data:
+-                    message.put({"type": "html", "content": data["text/html"]})
+-                elif "text/plain" in data:
+-                    message.put({"type": "text", "content": data["text/plain"]})
+-                elif "application/javascript" in data:
+-                    message.put({"type": "javascript", "content": data["application/javascript"]})
+-
+-            elif msg_type == 'status':
+-                if content['execution_state'] == 'idle':
+-                    break
+-        print("[PythonLanguage]finished.")
+-        self.stop()
+Index: core/llm/code/code_parser.py
+===================================================================
+diff --git a/core/llm/code/code_parser.py b/core/llm/code/code_parser.py
+deleted file mode 100644
+--- a/core/llm/code/code_parser.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,10 +0,0 @@
+-import re
+-
+-def CodeParser(text: str):
+-    pattern = r"```([\w\+\-\.]*)\n([\s\S]*?)\n```"
+-    matches = re.findall(pattern, text)
+-    
+-    results = []
+-    for lang, code in matches:
+-        results.append({"lang": lang.strip() if lang else "text", "code": code})
+-    return results
+\ No newline at end of file
+Index: core/computer/code/README.md
+===================================================================
+diff --git a/core/computer/code/README.md b/core/computer/code/README.md
+deleted file mode 100644
+--- a/core/computer/code/README.md	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,214 +0,0 @@
+-# Code执行模块
+-
+-这是一个多语言代码执行模块，支持Python、Bash和PowerShell代码的异步执行。
+-
+-## 功能概述
+-
+-该模块提供了一个统一的接口来执行不同编程语言的代码，并通过队列返回执行结果。支持代码中断、执行时间监控等功能。
+-
+-## 架构设计
+-
+-### 核心组件
+-
+-- **Code类**: 主要的代码执行管理器，负责语言选择和执行调度
+-- **BaseLanguage类**: 所有语言实现的抽象基类
+-- **PythonLanguage类**: Python代码执行器，基于Jupyter内核
+-- **BashLanguage类**: Bash/Shell代码执行器，基于subprocess
+-- **PowerShellLanguage类**: PowerShell代码执行器，基于subprocess
+-
+-### 消息系统
+-
+-所有执行结果通过`queue.Queue`对象返回，消息格式为字典：
+-
+-```python
+-{
+-    "type": "消息类型",
+-    "content": "消息内容"
+-}
+-```
+-
+-## run()返回的消息格式
+-
+-- **`text`**: 纯文本输出，包括标准输出、错误输出、执行结果等
+-- **`image/png`**: PNG格式的图片数据（base64编码）
+-- **`image/jpeg`**: JPEG格式的图片数据（base64编码）
+-- **`html`**: HTML格式的内容
+-- **`text/plain`**: 纯文本内容
+-- **`application/javascript`**: JavaScript代码
+-- **`error`**: 模块的错误信息，不包含代码运行的错误
+-
+-## 使用方法
+-
+-### 基本用法
+-
+-```python
+-from core.computer.code import Code
+-
+-# 创建代码执行器
+-code_executor = Code()
+-
+-# 执行Python代码
+-result_queue = code_executor.run("python", "print('Hello, World!')")
+-
+-# 执行Bash代码
+-result_queue = code_executor.run("bash", "ls -la")
+-
+-# 执行PowerShell代码
+-result_queue = code_executor.run("powershell", "Get-ChildItem")
+-
+-# 获取执行结果
+-while not result_queue.empty():
+-    message = result_queue.get()
+-    print(f"{message['type']}: {message['content']}")
+-```
+-
+-### 支持的语言
+-
+-- Python: `python`
+-- Bash: `bash`, `sh`
+-- PowerShell: `powershell`, `pwsh`
+-
+-### 中断执行
+-
+-```python
+-# 中断当前正在执行的代码
+-result_queue = code_executor.interrupt()
+-```
+-
+-### 监控执行状态
+-
+-```python
+-# 检查是否有代码正在运行
+-is_running = code_executor.is_running()
+-
+-# 获取已运行时间
+-elapsed_time = code_executor.get_elapsed_time()
+-```
+-
+-## 各语言实现详情
+-
+-### Python实现 (PythonLanguage)
+-
+-- **技术**: 基于Jupyter内核和jupyter_client
+-- **特性**: 
+-  - 支持matplotlib内联绘图
+-  - 支持图片、HTML、JavaScript等多种输出格式
+-  - 完整的Python语法支持
+-  - 自动添加`%matplotlib inline`以支持可视化
+-- **依赖**: jupyter_client, ipython kernel
+-
+-### Bash实现 (BashLanguage)
+-
+-- **技术**: 基于subprocess.Popen
+-- **特性**:
+-  - 检测bash是否可用
+-  - 实时输出流
+-  - 支持信号中断
+-- **可用性检查**: `shutil.which("bash")`
+-
+-### PowerShell实现 (PowerShellLanguage)
+-
+-- **技术**: 基于subprocess.Popen
+-- **特性**:
+-  - 优先使用pwsh (PowerShell Core)，回退到powershell
+-  - 跨平台支持
+-  - 无配置文件执行 (`-NoProfile`)
+-- **可用性检查**: `shutil.which("powershell") or shutil.which("pwsh")`
+-
+-## 错误处理
+-
+-### 模块级错误
+-
+-- 不支持的语言
+-- 系统环境问题
+-- 内核启动失败
+-
+-### 代码执行错误
+-
+-- 语法错误
+-- 运行时错误
+-- 依赖缺失
+-
+-## 线程安全
+-
+-- 每次代码执行都在独立的线程中运行
+-- 使用队列进行线程间通信
+-- 支持优雅的中断机制
+-
+-## 性能考虑
+-
+-- Python内核会重复启动和停止，适合短时间执行
+-- Bash和PowerShell为每次执行创建新进程
+-- 所有语言都支持实时输出，不会阻塞主线程
+-
+-## 依赖要求
+-
+-### Python环境
+-- Python 3.7+
+-- jupyter_client
+-- IPython kernel
+-
+-### 系统环境
+-- Bash: Git Bash, WSL, 或Linux/macOS环境
+-- PowerShell: Windows PowerShell 5.1+ 或 PowerShell Core 6.0+
+-
+-## 示例代码
+-
+-```python
+-# 完整示例
+-from core.computer.code import Code
+-import time
+-
+-def execute_code_example():
+-    executor = Code()
+-    
+-    # Python可视化示例
+-    print("执行Python代码...")
+-    result = executor.run("python", """
+-import matplotlib.pyplot as plt
+-import numpy as np
+-
+-x = np.linspace(0, 10, 100)
+-y = np.sin(x)
+-
+-plt.figure(figsize=(8, 4))
+-plt.plot(x, y)
+-plt.title('正弦波形')
+-plt.xlabel('x')
+-plt.ylabel('sin(x)')
+-plt.grid(True)
+-plt.show()
+-""")
+-    
+-    # 读取结果
+-    while not result.empty() or executor.is_running():
+-        if not result.empty():
+-            msg = result.get()
+-            print(f"收到消息: {msg['type']}")
+-            if msg['type'].startswith('image/'):
+-                print(f"图片数据: {len(msg['content'])} 字节")
+-            else:
+-                print(f"内容: {msg['content'][:100]}...")
+-        time.sleep(0.1)
+-    
+-    print("Python执行完成")
+-
+-if __name__ == "__main__":
+-    execute_code_example()
+-```
+-
+-## 注意事项
+-
+-1. **Python内核**: 每次执行都会重新启动内核，状态不会保留
+-2. **安全性**: 该模块设计用于受控环境，避免执行不受信任的代码
+-3. **资源管理**: 长时间运行可能产生大量进程，建议监控资源使用
+-4. **平台兼容性**: 某些功能在不同操作系统上表现可能不同
+-
+-## 未来改进
+-
+-- [ ] 支持更多编程语言 (Node.js, Ruby等)
+-- [ ] Python内核持久化，避免重复启动
+-- [ ] 代码执行超时设置
+-- [ ] 更细粒度的权限控制
+-- [ ] 代码执行历史记录
+-- [ ] 性能监控和分析
+Index: core/llm/code/__init__.py
+===================================================================
+diff --git a/core/llm/code/__init__.py b/core/llm/code/__init__.py
+deleted file mode 100644
+--- a/core/llm/code/__init__.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,3 +0,0 @@
+-from .agent import CodeAgent
+-
+-__all__ = ["CodeAgent"]
+\ No newline at end of file
+Index: core/computer/keyboard/keyboard.py
+===================================================================
+diff --git a/core/computer/keyboard/keyboard.py b/core/computer/keyboard/keyboard.py
+deleted file mode 100644
+--- a/core/computer/keyboard/keyboard.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,296 +0,0 @@
+-import pyautogui
+-import time
+-from typing import Union, List, Optional
+-
+-
+-class Keyboard:
+-    """键盘操作类，提供各种键盘控制功能"""
+-    
+-    def __init__(self):
+-        """初始化键盘模块"""
+-        pyautogui.PAUSE = 0.05  # 每次操作后暂停0.05秒
+-    
+-    def type_text(self, text: str, interval: float = 0.0) -> dict:
+-        """
+-        输入文本
+-        
+-        Args:
+-            text: 要输入的文本
+-            interval: 每个字符之间的间隔时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.type_text("Hello World")
+-            >>> keyboard.type_text("慢速输入", interval=0.1)
+-            
+-        Note:
+-            对于中文输入，需要系统已经切换到中文输入法
+-        """
+-        try:
+-            pyautogui.write(text, interval=interval)
+-            return {
+-                'success': True,
+-                'action': 'type_text',
+-                'text': text,
+-                'length': len(text),
+-                'interval': interval
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'type_text',
+-                'error': str(e)
+-            }
+-    
+-    def press(self, key: str, presses: int = 1, interval: float = 0.0) -> dict:
+-        """
+-        按下指定键
+-        
+-        Args:
+-            key: 键名，如 'enter', 'space', 'a', 'ctrl' 等
+-            presses: 按键次数
+-            interval: 多次按键之间的间隔（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.press('enter')  # 按下回车键
+-            >>> keyboard.press('tab', presses=3)  # 按3次Tab键
+-            >>> keyboard.press('backspace')  # 按退格键
+-            
+-        常用键名:
+-            - 字母: 'a', 'b', 'c' ...
+-            - 数字: '0', '1', '2' ...
+-            - 功能键: 'f1', 'f2' ... 'f12'
+-            - 方向键: 'up', 'down', 'left', 'right'
+-            - 特殊键: 'enter', 'space', 'tab', 'backspace', 'delete', 'esc'
+-            - 修饰键: 'ctrl', 'shift', 'alt', 'win' (或 'command' 在Mac上)
+-        """
+-        try:
+-            pyautogui.press(key, presses=presses, interval=interval)
+-            return {
+-                'success': True,
+-                'action': 'press',
+-                'key': key,
+-                'presses': presses,
+-                'interval': interval
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'press',
+-                'error': str(e)
+-            }
+-    
+-    def hotkey(self, *keys: str) -> dict:
+-        """
+-        按下组合键（快捷键）
+-        
+-        Args:
+-            *keys: 要同时按下的键，按顺序传入
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.hotkey('ctrl', 'c')  # Ctrl+C 复制
+-            >>> keyboard.hotkey('ctrl', 'v')  # Ctrl+V 粘贴
+-            >>> keyboard.hotkey('ctrl', 'shift', 's')  # Ctrl+Shift+S
+-            >>> keyboard.hotkey('alt', 'tab')  # Alt+Tab 切换窗口
+-            >>> keyboard.hotkey('ctrl', 'a')  # Ctrl+A 全选
+-        """
+-        try:
+-            pyautogui.hotkey(*keys)
+-            return {
+-                'success': True,
+-                'action': 'hotkey',
+-                'keys': keys,
+-                'combination': '+'.join(keys)
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'hotkey',
+-                'error': str(e)
+-            }
+-    
+-    def key_down(self, key: str) -> dict:
+-        """
+-        按下键（不释放）
+-        
+-        Args:
+-            key: 键名
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.key_down('shift')  # 按下Shift键
+-        """
+-        try:
+-            pyautogui.keyDown(key)
+-            return {
+-                'success': True,
+-                'action': 'key_down',
+-                'key': key
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'key_down',
+-                'error': str(e)
+-            }
+-    
+-    def key_up(self, key: str) -> dict:
+-        """
+-        释放键
+-        
+-        Args:
+-            key: 键名
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.key_up('shift')  # 释放Shift键
+-        """
+-        try:
+-            pyautogui.keyUp(key)
+-            return {
+-                'success': True,
+-                'action': 'key_up',
+-                'key': key
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'key_up',
+-                'error': str(e)
+-            }
+-    
+-    def hold_key(self, key: str, duration: float = 1.0) -> dict:
+-        """
+-        按住一个键一段时间
+-        
+-        Args:
+-            key: 键名
+-            duration: 按住的时间（秒）
+-            
+-        Returns:
+-            包含操作结果的字典
+-            
+-        Examples:
+-            >>> keyboard.hold_key('space', duration=2.0)  # 按住空格键2秒
+-        """
+-        try:
+-            pyautogui.keyDown(key)
+-            time.sleep(duration)
+-            pyautogui.keyUp(key)
+-            return {
+-                'success': True,
+-                'action': 'hold_key',
+-                'key': key,
+-                'duration': duration
+-            }
+-        except Exception as e:
+-            return {
+-                'success': False,
+-                'action': 'hold_key',
+-                'error': str(e)
+-            }
+-    
+-    # 常用快捷键的便捷方法
+-    
+-    def copy(self) -> dict:
+-        """复制 (Ctrl+C)"""
+-        return self.hotkey('ctrl', 'c')
+-    
+-    def paste(self) -> dict:
+-        """粘贴 (Ctrl+V)"""
+-        return self.hotkey('ctrl', 'v')
+-    
+-    def cut(self) -> dict:
+-        """剪切 (Ctrl+X)"""
+-        return self.hotkey('ctrl', 'x')
+-    
+-    def select_all(self) -> dict:
+-        """全选 (Ctrl+A)"""
+-        return self.hotkey('ctrl', 'a')
+-    
+-    def undo(self) -> dict:
+-        """撤销 (Ctrl+Z)"""
+-        return self.hotkey('ctrl', 'z')
+-    
+-    def redo(self) -> dict:
+-        """重做 (Ctrl+Y)"""
+-        return self.hotkey('ctrl', 'y')
+-    
+-    def save(self) -> dict:
+-        """保存 (Ctrl+S)"""
+-        return self.hotkey('ctrl', 's')
+-    
+-    def find(self) -> dict:
+-        """查找 (Ctrl+F)"""
+-        return self.hotkey('ctrl', 'f')
+-    
+-    def new_tab(self) -> dict:
+-        """新建标签页 (Ctrl+T)"""
+-        return self.hotkey('ctrl', 't')
+-    
+-    def close_tab(self) -> dict:
+-        """关闭标签页 (Ctrl+W)"""
+-        return self.hotkey('ctrl', 'w')
+-    
+-    def refresh(self) -> dict:
+-        """刷新 (F5)"""
+-        return self.press('f5')
+-    
+-    def switch_window(self) -> dict:
+-        """切换窗口 (Alt+Tab)"""
+-        return self.hotkey('alt', 'tab')
+-
+-
+-# 创建全局实例，支持直接调用
+-_keyboard_instance = Keyboard()
+-
+-# 导出便捷函数
+-type_text = _keyboard_instance.type_text
+-press = _keyboard_instance.press
+-hotkey = _keyboard_instance.hotkey
+-key_down = _keyboard_instance.key_down
+-key_up = _keyboard_instance.key_up
+-hold_key = _keyboard_instance.hold_key
+-
+-# 导出快捷键函数
+-copy = _keyboard_instance.copy
+-paste = _keyboard_instance.paste
+-cut = _keyboard_instance.cut
+-select_all = _keyboard_instance.select_all
+-undo = _keyboard_instance.undo
+-redo = _keyboard_instance.redo
+-save = _keyboard_instance.save
+-find = _keyboard_instance.find
+-new_tab = _keyboard_instance.new_tab
+-close_tab = _keyboard_instance.close_tab
+-refresh = _keyboard_instance.refresh
+-switch_window = _keyboard_instance.switch_window
+-
+-
+-if __name__ == "__main__":
+-    # 简单测试
+-    print("测试键盘模块...")
+-    
+-    # 测试按键
+-    print("按下Esc键...")
+-    result = press('esc')
+-    print(f"结果: {result}")
+-    
+-    # 测试快捷键
+-    print("测试Ctrl+C快捷键...")
+-    result = copy()
+-    print(f"结果: {result}")
+-    
+-    print("键盘模块测试完成！")
+Index: core/computer/code/languages/bash.py
+===================================================================
+diff --git a/core/computer/code/languages/bash.py b/core/computer/code/languages/bash.py
+deleted file mode 100644
+--- a/core/computer/code/languages/bash.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,63 +0,0 @@
+-import queue
+-import shutil
+-import subprocess
+-import threading
+-import time
+-
+-from ..base_language import BaseLanguage
+-
+-
+-class BashLanguage(BaseLanguage):
+-    def __init__(self):
+-        super().__init__()
+-        self.process = None
+-
+-    def is_available(self):
+-        return shutil.which("bash") is not None
+-
+-    def run(self, code: str):
+-        message = queue.Queue()
+-        execution_thread = threading.Thread(target=self._execute, args=(code, message))
+-        execution_thread.daemon = True
+-        execution_thread.start()
+-        return message
+-
+-    def _execute(self, code: str, message: queue.Queue):
+-        self.is_running = True
+-        self.start_time = time.time()
+-        self.should_stop = False
+-        
+-        try:
+-            self.process = subprocess.Popen(
+-                ["bash"],
+-                stdin=subprocess.PIPE,
+-                stdout=subprocess.PIPE,
+-                stderr=subprocess.STDOUT,
+-                text=True,
+-                bufsize=1,
+-                universal_newlines=True
+-            )
+-            
+-            self.process.stdin.write(code)
+-            self.process.stdin.close()
+-            
+-            for line in self.process.stdout:
+-                message.put({"type": "text", "content": line})
+-            
+-            return_code = self.process.wait()
+-            message.put({"type": "text", "content": f"Return code: {return_code}"})
+-            
+-        except Exception as e:
+-            message.put({"type": "error", "content": f"[BashLanguage]Error: {e}"})
+-        finally:
+-            self.is_running = False
+-            self.process = None
+-            
+-    def interrupt(self):
+-        self.should_stop = True
+-        if self.process:
+-            self.process.terminate()
+-            try:
+-                self.process.wait(timeout=2)
+-            except subprocess.TimeoutExpired:
+-                self.process.kill()
+Index: core/computer/code/base_language.py
+===================================================================
+diff --git a/core/computer/code/base_language.py b/core/computer/code/base_language.py
+deleted file mode 100644
+--- a/core/computer/code/base_language.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,19 +0,0 @@
+-import time
+-
+-class BaseLanguage:
+-    def __init__(self):
+-        self.is_running = False
+-        self.start_time = None
+-        self.elapsed_time = 0
+-        self.should_stop = False
+-    
+-    def run(self, code: str):
+-        raise NotImplementedError("[BaseLanguage]Subclasses must implement this method")
+-    
+-    def get_elapsed_time(self):
+-        if self.is_running and self.start_time:
+-            return time.time() - self.start_time
+-        return self.elapsed_time
+-    
+-    def interrupt(self):
+-        self.should_stop = True
+\ No newline at end of file
+Index: core/computer/README.md
+===================================================================
+diff --git a/core/computer/README.md b/core/computer/README.md
+deleted file mode 100644
+--- a/core/computer/README.md	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,3 +0,0 @@
+-### 设计
+-
+-所有返回，字典由列表或者queue装起来
+\ No newline at end of file
+Index: core/llm/code/default_prompt.py
+===================================================================
+diff --git a/core/llm/code/default_prompt.py b/core/llm/code/default_prompt.py
+deleted file mode 100644
+--- a/core/llm/code/default_prompt.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,33 +0,0 @@
+-import getpass
+-import platform
+-
+-
+-default_prompt = f"""
+-You are Open Interpreter, a world-class programmer that can complete any goal by executing code.
+-For advanced requests, start by writing a plan.
+-When you execute code, it will be executed **on the user's machine**. The user has given you **full and complete permission** to execute any code necessary to complete the task.
+-You can access the internet. Run **any code** to achieve the goal, and if at first you don't succeed, try again and again.
+-You can install new packages.
+-When a user refers to a filename, they're likely referring to an existing file in the directory you're currently executing code in.
+-Write messages to the user in Markdown.
+-In general, try to **make plans** with as few steps as possible. 
+-You should try something, print information about it, then continue from there in tiny, informed steps. 
+-You will never get it on the first try, and attempting it in one go will often lead to errors you cant see.
+-You are capable of **any** task.
+-Print your code directly in the output. Do not print any additional information, including code explanation, running guide, etc.
+-
+-Use the following format to output your code:
+-
+-```python
+-# Your python code here
+-print("Result to inspect")
+-```
+-
+-User's Name: {getpass.getuser()}
+-User's OS: {platform.system()}
+-Language: {{language}}
+-"""
+-
+-default_prompt_end = "Are we done? If the task is finished, print \"The task is done.\" in the first line, then summarize the result. If the task is not finished yet, what's next?"
+-# As for actually executing code to carry out that plan, for *stateful* languages (like python, javascript, shell, but NOT for html which starts from 0 every time) **it's critical not to try to do everything in one code block.** 
+-# If the task is impossible, print \"The task is impossible.\" in the first line, then explain why.
+\ No newline at end of file
+Index: lin.py
+===================================================================
+diff --git a/lin.py b/lin.py
+deleted file mode 100644
+--- a/lin.py	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,3 +0,0 @@
+-import numpy
+-
+-ss
+\ No newline at end of file
+Index: .gitignore
+===================================================================
+diff --git a/.gitignore b/.gitignore
+deleted file mode 100644
+--- a/.gitignore	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,7 +0,0 @@
+-.idea
+-.vscode
+-__pycache__
+-test
+-
+-*.log
+-.env*
+\ No newline at end of file
+Index: requirements.txt
+===================================================================
+diff --git a/requirements.txt b/requirements.txt
+deleted file mode 100644
+--- a/requirements.txt	(revision 4057a203831344e54e570576815336c422e4fe9f)
++++ /dev/null	(revision 4057a203831344e54e570576815336c422e4fe9f)
+@@ -1,3 +0,0 @@
+-litellm
+-jupyter_client
+-pyautogui
+\ No newline at end of file
+diff --git a/core/llm/gui/__init__.py b/core/llm/gui/__init__.py
+deleted file mode 100644
+diff --git a/core/__init__.py b/core/__init__.py
+deleted file mode 100644
+diff --git a/core/computer/__init__.py b/core/computer/__init__.py
+deleted file mode 100644
