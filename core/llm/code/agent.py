@@ -4,14 +4,10 @@ import time
 import queue
 import threading
 from queue import Queue
-from dotenv import load_dotenv
 from litellm import completion
 from core.computer.code import Code
 from .default_prompt import default_prompt, default_prompt_end
 from .code_parser import CodeParser
-
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path)
 
 class CodeAgent:
     def __init__(self):

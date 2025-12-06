@@ -1,0 +1,6 @@
+flet>=0.15.0
+markdown>=3.4.0
+litellm>=1.0.0
+python-dotenv>=1.0.0
+jupyter-client>=8.0.0
+queue
