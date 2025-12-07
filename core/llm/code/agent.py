@@ -5,6 +5,9 @@ import queue
 import threading
 from queue import Queue
 from litellm import completion
+from dotenv import load_dotenv
+
+load_dotenv()
 from core.computer.code import Code
 from .default_prompt import default_prompt, default_prompt_end
 from .code_parser import CodeParser
