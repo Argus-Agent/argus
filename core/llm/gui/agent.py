@@ -4,6 +4,9 @@ import queue
 import threading
 from queue import Queue
 from litellm import completion
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import time
 from core.computer.mouse import click, double_click, right_click, move, drag, scroll

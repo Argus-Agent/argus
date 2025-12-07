@@ -1,3 +1,4 @@
 litellm
 jupyter_client
 pyautogui
+python-dotenv

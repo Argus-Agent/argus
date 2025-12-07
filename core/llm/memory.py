@@ -2,6 +2,9 @@ import time
 import json
 import os
 from typing import List, Optional, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     import litellm
@@ -64,8 +67,11 @@ class MemoryManager:
         max_tokens: int = 8000, 
         keep_last_screenshots: int = 2,
         save_dir: str = "./memory_storage",
-        model: str = "gpt-4o" 
+        save_dir: str = "./memory_storage",
+        model: str = None
     ):
+        if model is None:
+            model = os.getenv("CodeAgent_MODEL", "gpt-4o")
         self.agent_name = agent_name
         self.history: List[Message] = []
         self.system_prompt: Optional[Message] = None
