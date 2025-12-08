@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent4 | Intelligent Automation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="monitor-overlay"></div>
+    
+    <div class="app-container">
+        <!-- Sidebar / Header -->
+        <header class="glass-panel header">
+            <div class="logo">
+                <i class="fa-solid fa-robot"></i> Agent4
+            </div>
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="gui" onclick="setMode('gui')">
+                    <i class="fa-solid fa-desktop"></i> GUI Agent
+                </button>
+                <button class="mode-btn" data-mode="code" onclick="setMode('code')">
+                    <i class="fa-solid fa-code"></i> Code Agent
+                </button>
+            </div>
+            <div class="status-indicator" id="status-indicator">
+                <span class="status-dot"></span> Ready
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Input & Controls -->
+            <section class="control-panel glass-panel">
+                <h2>New Mission</h2>
+                <div class="input-group">
+                    <textarea id="task-input" placeholder="Describe your mission in detail... (e.g., 'Open Notepad and write a poem')"></textarea>
+                </div>
+                <div class="action-buttons">
+                    <button id="start-btn" onclick="startTask()">
+                        <i class="fa-solid fa-play"></i> Initialize
+                    </button>
+                    <button id="stop-btn" class="danger-btn" onclick="stopTask()" disabled>
+                        <i class="fa-solid fa-stop"></i> Abort
+                    </button>
+                </div>
+                
+                <div id="permission-request" class="permission-box hidden">
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> Permission Required</h3>
+                    <p id="perm-desc">The agent wants to execute code.</p>
+                    <div class="perm-actions">
+                        <button onclick="sendPermission('approve')">Approve</button>
+                        <button onclick="sendPermission('deny')" class="danger-btn">Deny</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Visual & Log Output -->
+            <section class="output-panel">
+                <!-- GUI Visualizer (Only visible in GUI mode or when image present) -->
+                <div id="visualizer" class="glass-panel visualizer hidden">
+                    <div class="vis-header">
+                        <span><i class="fa-regular fa-eye"></i> Live Vision</span>
+                        <span id="vis-details">1920x1080</span>
+                    </div>
+                    <div class="img-container">
+                        <img id="screenshot-view" src="" alt="Agent Vision" />
+                        <!-- Overlay for clicks could go here -->
+                        <div id="click-overlay" class="click-indicator"></div>
+                    </div>
+                </div>
+
+                <!-- Terminal / Log -->
+                <div class="glass-panel terminal-wrapper">
+                    <div class="term-header">
+                        <span><i class="fa-solid fa-terminal"></i> System Log</span>
+                        <button onclick="clearLogs()" class="icon-btn" title="Clear"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div id="terminal-output" class="terminal-body custom-scrollbar">
+                        <div class="log-entry system">Welcome to Agent4 System. System ready.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

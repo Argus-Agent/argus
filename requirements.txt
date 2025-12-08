@@ -2,3 +2,7 @@ litellm
 jupyter_client
 pyautogui
 python-dotenv
+ui-tars
+fastapi
+uvicorn
+websockets

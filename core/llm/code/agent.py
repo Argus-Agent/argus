@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import os
 import time
 import queue
@@ -159,23 +159,23 @@ class CodeAgent:
                         continue
 
                     # TODO: 有bug，图片先不返回
-                    if delta["type"] == "image/png" or delta["type"] == "image/jpeg":
+                    if delta['type'] == "image/png" or delta['type'] == "image/jpeg":
                         # pass
                         message_to_client.put({"name": "CodeAgent", **delta})
                         code_output_content.append(
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:{delta["type"]};base64,{delta["content"]}"
+                                    "url": f"data:{delta['type']};base64,{delta['content']}"
                                 }
                             }
                         )
                     else: # 暂时把其他所有内容转为text
-                        message_to_client.put({"name": "CodeAgent", "type": "text", "content": delta["content"]})
+                        message_to_client.put({"name": "CodeAgent", "type": "text", "content": delta['content']})
                         code_output_content.append(
                             {
                                 "type": "text",
-                                "text": delta["content"]
+                                "text": delta['content']
                             }
                         )
 
@@ -199,3 +199,4 @@ class CodeAgent:
 
 
             
+

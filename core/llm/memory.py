@@ -67,7 +67,6 @@ class MemoryManager:
         max_tokens: int = 8000, 
         keep_last_screenshots: int = 2,
         save_dir: str = "./memory_storage",
-        save_dir: str = "./memory_storage",
         model: str = None
     ):
         if model is None:
