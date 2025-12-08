@@ -1,4 +1,21 @@
-litellm
-jupyter_client
-pyautogui
-python-dotenv
+# Core dependencies
+litellm>=1.0.0
+python-dotenv>=0.19.0
+
+# Computer control dependencies
+pyautogui>=0.9.54
+Pillow>=9.0.0
+pywin32>=227; sys_platform == "win32"
+comtypes>=1.1.0; sys_platform == "win32"
+
+# Code execution dependencies
+jupyter_client>=7.0.0
+ipython>=7.0.0
+
+# Web server dependencies
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=11.0.0
+
+# UI automation dependencies
+ui-tars>=0.1.0
