@@ -7,11 +7,25 @@ Agent4 Main Entry Point
 
 # [新增] 1. 优先加载 .env 文件，确保能读取到配置
 from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
-
 import os
 import sys
+
+# Determine the directory where the executable (or script) is located
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    base_path = os.path.dirname(sys.executable)
+else:
+    # Running as script
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+# Load .env from that directory
+dotenv_path = os.path.join(base_path, '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    # Fallback to default behavior if specific file not found
+    load_dotenv(find_dotenv())
+
 import argparse
 import queue
 import threading
@@ -20,8 +34,11 @@ import io
 
 # Fix Windows console encoding for emoji support
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    # 在 PyInstaller --noconsole 模式下，sys.stdout 可能是 None
+    if sys.stdout is not None:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    if sys.stderr is not None:
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Configure logging
 logging.basicConfig(
