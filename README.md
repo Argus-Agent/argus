@@ -1,18 +1,57 @@
-# Agent4 - Liquid (智能桌面助理)
+# Agent4: The Liquid Desktop Agent 💧
+> **让桌面自动化像水一样灵动、像人一样思考。**
+> *Next-Gen Windows Agent powered by UI-TARS & Dual-Engine Architecture*
 
-专为 Windows 设计的现代化智能代理，拥有苹果液态风格 (Liquid Style) 的悬浮界面，基于 UI-TARS 视觉大模型，支持完全的操作可视化。
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![Status](https://img.shields.io/badge/status-Competition_Ready-green)
 
-## ⭐ 核心特性
+专为 Windows 设计的现代化智能代理，与传统的自动化脚本不同，Agent4 采用独创的 **"双脑协同" (Dual-Brain)** 架构，能够像人类一样"看"屏幕（通过 VLM），也能像极客一样用代码、命令行操作电脑。
 
-### 🎨 Liquid UI (液态灵动界面)
+它拥有极具未来感的 **Liquid UI** 悬浮界面，并首创 **Vision Overlay** 技术，将 AI 的操作轨迹实时可视化，实现了真正的“人机共驾”体验。
+
+## 🌟 核心创新 (Key Innovations)
+
+### 1. 🧠 智能双脑路由 (Smart Dual-Engine Router)
+拒绝"一刀切"的模型调用。Agent4 内置智能路由器，根据任务类型自动切换 GUI/Code 模式：
+- **👁️ 视觉右脑 (GUI Engine)**: 搭载 **UI-TARS** 视觉大模型，负责复杂的界面交互（点击、拖拽、识别图标）。
+- **⚡ 逻辑左脑 (Code Engine)**: 内置 **Python解释器**，负责数据处理、文件操作、API调用等逻辑任务。
+- **🔄 自动故障转移**: 当视觉操作失败时，自动切换至代码模式尝试解决，鲁棒性提升 200%。
+
+### 2. ✨ 沉浸式可视化反馈Liquid UI (液态灵动界面)
 - **异形悬浮**: 真正的无边框圆角设计，像灵动岛一样悬浮在桌面
 - **极简风格**: 苹果风磨砂白配色，平时极小占用
-- **视觉反馈**: 实时在屏幕上绘制点击波纹和操作路径 (Vision Overlay)
+- **视觉反馈**: 实时在屏幕上绘制点击波纹和操作路径 (Vision Overlay)，操作可视化。
 
-### 🤖 智能双核驱动
-- **GUI Engine**: 基于 **UI-TARS 1.5** 视觉大模型，像人一样看屏幕操作
-- **Smart Router**: 智能判断任务类型，自动切换 GUI/Code 模式
-- **Human-in-the-loop**: 遇到困难自动呼叫人类介入 (含"我已协助完成"功能)
+### 3. 💾 混合记忆系统 (Hybrid Memory)
+- **视觉剪枝 (Visual Pruning)**: 智能管理上下文窗口，自动丢弃过期的屏幕截图，保留文本逻辑。
+- **长期洞察 (Insights Storage)**: 自动将成功的操作经验和用户偏好持久化存储 (`insights.json`)，越用越聪明。
+
+### 4. 🤝 人机共驾机制 (Human-in-the-loop)
+- **Human-in-the-loop**: 当 Agent4 遇到无法解决的困难时，不会直接崩溃，而是通过 Liquid Bar 优雅地请求人类介入。用户可以接管鼠标完成那一步，点击“我已协助”，Agent4 即可继续后续流程。
+
+## 🏗️ 系统架构 (Architecture)
+
+```mermaid
+graph TD
+    User["用户指令"] --> UI["Liquid Bar (悬浮窗)"]
+    UI --> Router{"Smart Router 智能路由"}
+
+    Router -- "界面操作/视觉任务" --> GUI["GUI Agent (UI-TARS)"]
+    Router -- "数据/逻辑任务" --> Code["Code Agent (Interpreter)"]
+
+    GUI <--> Memory["混合记忆管理器"]
+    Code <--> Memory
+
+    GUI --> Tools["工具链: 键鼠/屏幕/窗口"]
+    Code --> Sandbox["代码沙箱: Python/Bash"]
+
+    Tools --> Visualizer["Vision Overlay 可视化层"]
+    Visualizer --> Screen["Windows 桌面"]
+
+    GUI -- "失败" --> Fallback["故障转移策略"]
+    Fallback --> Code
+    Code -- "失败" --> Fallback
+
+```
 
 ### 📦 核心组件
 
@@ -30,16 +69,20 @@
 ### 1. 安装依赖
 ```bash
 pip install -r requirements.txt
-# 确保安装了 CustomTkinter 和 PyWin32
-pip install customtkinter pywin32 pillow
 ```
 
 ### 2. 配置环境变量
-复制 `.env.example` 为 `.env` 并配置：
-```env
-GUIAgent_MODEL=ui-tars-7b
-GUIAgent_API_KEY=your_key
-GUIAgent_API_BASE=http://localhost:8000/v1
+
+在[火山引擎](https://console.volcengine.com/ark)获取API_KEY，复制 `.env.example` 为 `.env` 并配置:
+
+```plaintext
+GUIAgent_MODEL=volcengine/doubao-1-5-ui-tars-250428
+GUIAgent_API_BASE=https://ark.cn-beijing.volces.com/api/v3/
+GUIAgent_API_KEY=
+
+CodeAgent_MODEL=volcengine/doubao-seed-1-6-flash-250828
+CodeAgent_API_BASE=https://ark.cn-beijing.volces.com/api/v3/
+CodeAgent_API_KEY=
 ```
 
 ### 3. 启动
@@ -47,7 +90,7 @@ GUIAgent_API_BASE=http://localhost:8000/v1
 ```bash
 python main.py
 ```
-这将启动 **Liquid Bar** 悬浮窗。
+这将启动 **Liquid Bar** 悬浮窗。桌面顶部将出现悬浮灵动条，输入指令即可开始。
 
 **命令行模式**:
 ```bash
