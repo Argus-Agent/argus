@@ -73,14 +73,14 @@ pip install -r requirements.txt
 
 ### 2. 配置环境变量
 
-在[火山引擎](https://console.volcengine.com/ark)获取API_KEY，复制 `.env.example` 为 `.env` 并配置:
+在[火山引擎](https://console.volcengine.com/ark)获取API_KEY，修改 `.env` 并配置:
 
 ```plaintext
-GUIAgent_MODEL=volcengine/doubao-1-5-ui-tars-250428
+GUIAgent_MODEL=doubao-1-5-ui-tars-250428
 GUIAgent_API_BASE=https://ark.cn-beijing.volces.com/api/v3/
 GUIAgent_API_KEY=
 
-CodeAgent_MODEL=volcengine/doubao-seed-1-6-flash-250828
+CodeAgent_MODEL=doubao-seed-1-6-flash-250828
 CodeAgent_API_BASE=https://ark.cn-beijing.volces.com/api/v3/
 CodeAgent_API_KEY=
 ```
