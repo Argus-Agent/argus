@@ -25,6 +25,11 @@ params = [
     # 常用库的隐式依赖，防止打包遗漏
     '--hidden-import', 'litellm',
     '--hidden-import', 'tiktoken',
+    '--hidden-import', 'tiktoken_ext',
+    '--hidden-import', 'tiktoken_ext.openai_public',
+    '--hidden-import', 'tiktoken_ext.plugin',
+    '--collect-all', 'tiktoken',
+    '--collect-all', 'litellm',
     '--hidden-import', 'pydantic',
 ]
 

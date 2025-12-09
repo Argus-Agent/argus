@@ -340,8 +340,12 @@ class ConfigWindow(JellyBaseWindow):
             return
         env_file = dotenv_path if dotenv_path else ".env"
         try:
+            set_key(env_file, "GUIAgent_MODEL", "doubao-1-5-ui-tars-250428")
+            set_key(env_file, "GUIAgent_API_BASE", "https://ark.cn-beijing.volces.com/api/v3")
             set_key(env_file, "GUIAgent_API_KEY", key)
             os.environ["GUIAgent_API_KEY"] = key
+            set_key(env_file, "CodeAgent_MODEL", "deepseek-v3-2-251201")
+            set_key(env_file, "CodeAgent_API_BASE", "https://ark.cn-beijing.volces.com/api/v3")
             set_key(env_file, "CodeAgent_API_KEY", key)
             os.environ["CodeAgent_API_KEY"] = key
             self.destroy()
