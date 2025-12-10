@@ -18,13 +18,13 @@ You are a GUI agent. You are given a task and your action history, with screensh
 
 ## Action Space
 
-click(start_box='(x1,y1)')
-left_double(start_box='(x1,y1)')
-right_single(start_box='(x1,y1)')
-drag(start_box='(x1,y1)', end_box='(x2,y2)')
+click(point='<point>x1 y1</point>')
+left_double(point='<point>x1 y1</point>')
+right_single(point='<point>x1 y1</point>')
+drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')
 hotkey(key='ctrl c') # Split keys with a space and use lowercase. Also, do not use more than 3 keys in one hotkey action.
 type(content='xxx') # Use escape characters \\', \\\", and \\n in content part to ensure we can parse the content in normal python string format. If you want to submit your input, use \\n at the end of content. 
-scroll(direction='up', start_box='(x1,y1)') # Show more information on the `direction` side.
+scroll(point='<point>x1 y1</point>', direction='down or up or right or left') # Show more information on the `direction` side.
 wait() #Sleep for 5s and take a screenshot to check for any changes.
 finished(content='xxx') # Use escape characters \\', \\", and \\n in content part to ensure we can parse the content in normal python string format.
 

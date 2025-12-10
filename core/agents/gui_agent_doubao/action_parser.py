@@ -15,7 +15,7 @@ def parse_response(response: str) -> str:
 def parse_action(action_str: str) -> Tuple[str, Dict[str, Any]]:
     """
     Parse the action string into function name and arguments.
-    # Example: click(point='<point>450 416</point>') -> ('click', {'point': '<point>450 416</point>'})
+    Example: click(point='<point>450 416</point>') -> ('click', {'point': '<point>450 416</point>'})
     """
     # Match function name and arguments
     match = re.match(r"(\w+)\((.*)\)", action_str)
@@ -29,7 +29,17 @@ def parse_action(action_str: str) -> Tuple[str, Dict[str, Any]]:
     args_str = match.group(2)
     
     args = {}
-    # Match key='value' pairs
+    # Parse arguments: key='value' or key="value"
+    # This regex handles simple cases. For more complex nested quotes, a parser might be needed.
+    # But based on the prompt, args are simple strings.
+    # We need to handle escaped characters in content='...'
+    
+    # A simple split by comma might fail if content contains comma.
+    # Let's use a regex to find key='value' pairs.
+    # Value can be single quoted or double quoted.
+    
+    # Pattern to match key='value' or key="value"
+    # We use non-greedy match for value content
     arg_pattern = re.compile(r"(\w+)=(['\"])(.*?)\2")
     
     for match in arg_pattern.finditer(args_str):
@@ -38,22 +48,7 @@ def parse_action(action_str: str) -> Tuple[str, Dict[str, Any]]:
         # Unescape \\n, \\', \\"
         value = value.replace("\\n", "\n").replace("\\'", "'").replace('\\"', '"')
         args[key] = value
-    if "end_box" in args.keys():
-        start_box = args["start_box"]
-        end_box = args["end_box"]
-        start_coords = re.findall(r"\((\d+),\s*(\d+)\)", start_box)
-        end_coords = re.findall(r"\((\d+),\s*(\d+)\)", end_box)
-        if start_coords and end_coords:
-            args["start_point"] = f"<point>{start_coords[0][0]} {start_coords[0][1]}</point>"
-            args["end_point"] = f"<point>{end_coords[0][0]} {end_coords[0][1]}</point>"
-        del args["start_box"]
-        del args["end_box"]
-    elif "start_box" in args.keys():
-        start_box = args["start_box"]
-        start_coords = re.findall(r"\((\d+),\s*(\d+)\)", start_box)
-        if start_coords:
-            args["point"] = f"<point>{start_coords[0][0]} {start_coords[0][1]}</point>"
-        del args["start_box"]
+        
     return function_name, args
 
 def extract_point(point_str: str) -> Optional[Tuple[int, int]]:
@@ -65,16 +60,13 @@ def extract_point(point_str: str) -> Optional[Tuple[int, int]]:
         return int(match.group(1)), int(match.group(2))
     return None
 
-def get_action_coordinates(action_name: str, args: Dict[str, Any], screen_width: int, screen_height: int, Factor: float = 1000) -> Optional[Dict[str, int]]:
+def get_action_coordinates(action_name: str, args: Dict[str, Any], screen_width: int, screen_height: int) -> Optional[Dict[str, int]]:
     """
     Get the absolute coordinates for the action.
     Returns dict with keys 'x', 'y' (and 'xx', 'yy' for drag) or None.
     """
     def to_abs(x_rel, y_rel):
-        if Factor == 1000:
-            return int(x_rel / Factor * screen_width), int(y_rel / Factor * screen_height)
-        else:
-            return int(x_rel / Factor), int(y_rel / Factor)
+        return int(x_rel / 1000 * screen_width), int(y_rel / 1000 * screen_height)
 
     if action_name in ["click", "left_double", "right_single", "scroll"]:
         if 'point' in args:
@@ -98,7 +90,7 @@ def get_action_coordinates(action_name: str, args: Dict[str, Any], screen_width:
                 return result
     return None
 
-def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width: int, screen_height: int, offset_x: int = 0, offset_y: int = 0, Factor: float = 1000) -> None:
+def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width: int, screen_height: int, offset_x: int = 0, offset_y: int = 0) -> None:
     """
     Map the parsed action to the actual mouse/keyboard function calls.
     """
@@ -106,21 +98,16 @@ def map_action_to_function(action_name: str, args: Dict[str, Any], screen_width:
     
     # Helper to convert relative coordinates (0-1000) to absolute
     def to_abs(x_rel, y_rel):
-        logging.info(f"Converting relative coordinates ({x_rel}, {y_rel}) with Factor {Factor}")
         # return int(x_rel / 1000), int(y_rel / 1000)
         # print (f"origin width: {screen_width}, height: {screen_height}")
-        if Factor == 1000:
-            return int(x_rel / Factor * screen_width) + offset_x, int(y_rel / Factor * screen_height) + offset_y
-        else:
-            return int(x_rel / Factor) + offset_x, int(y_rel / Factor) + offset_y
+        return int(x_rel / 1000 * screen_width) + offset_x, int(y_rel / 1000 * screen_height) + offset_y
 
     if action_name == "click":
         if 'point' in args:
             pt = extract_point(args['point'])
-            logging.info(f"Extracted point: {pt}")
             if pt:
                 x, y = to_abs(*pt)
-                logging.info(f"Clicking at: {x}, {y}")
+                print(f"Clicking at: {x}, {y}")
                 mouse.click(x, y)
     
     elif action_name == "left_double":

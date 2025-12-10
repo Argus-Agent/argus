@@ -14,7 +14,7 @@ from core.tools.screen import screen
 from core.agents.agent_memory.memory import MemoryManager
 
 from .default_prompt import get_default_prompt
-from ui_tars import action_parser
+
 
 import logging
 import os
@@ -94,7 +94,7 @@ class GUIAgent:
         
         iteration = 0
         max_iterations = 50
-        RESIZE_FACTOR = 0.8
+        
         while not self.stop_agent and iteration < max_iterations:
             iteration += 1
             logging.info(f"[GUIAgent] 迭代 {iteration}/{max_iterations}")
@@ -102,7 +102,7 @@ class GUIAgent:
             # 2. 截屏
             try:
                 screenshot_dict, origin_width, origin_height, offset_left, offset_top = screen.screenshot_base64(
-                    resize_factor=RESIZE_FACTOR
+                    resize_factor=0.8
                 )
             except Exception as e:
                 logging.error(f"截屏失败: {e}")
@@ -125,9 +125,9 @@ class GUIAgent:
             try:
                 logging.info("[GUIAgent] Waiting for LLM response...")
                 response = completion(
-                    model="openai/UI-TARS-1.5-7B",
-                    api_base="http://1004027499856883.cn-guangzhou.pai-eas.aliyuncs.com/api/predict/quickstart_deploy_20251210_nnu5/v1",
-                    api_key="NjJlMTJiN2UwM2QxYTA5YjMwNTUwMWFjNDQyNzEwNTY3ZWM1NTZmOQ==",
+                    model=f"volcengine/{self.model}",
+                    api_base=self.api_base,
+                    api_key=self.api_key,
                     messages=messages,
                     stream=True,
                     # thinking="enabled" # Enable if supported by the model provider
@@ -169,7 +169,7 @@ class GUIAgent:
                     return f"Task finished: {action_args.get('content', '')}"
                 
                 # 发送可视化坐标点
-                action_point = get_action_coordinates(action_name, action_args, origin_width, origin_height, RESIZE_FACTOR)
+                action_point = get_action_coordinates(action_name, action_args, origin_width, origin_height)
                 if action_point:
                     content = {
                         "x": action_point['x'], 
@@ -192,8 +192,7 @@ class GUIAgent:
                     origin_width, 
                     origin_height, 
                     offset_left, 
-                    offset_top,
-                    RESIZE_FACTOR
+                    offset_top
                 )
                 
             except Exception as e:
