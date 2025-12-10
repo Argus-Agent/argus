@@ -1,4 +1,4 @@
-# Agent4: The Liquid Desktop Agent 💧
+# Argus: The Liquid Desktop Agent 💧
 > **让桌面自动化像水一样灵动、像人一样思考。**
 > *Next-Gen Windows Agent powered by UI-TARS & Dual-Engine Architecture*
 
